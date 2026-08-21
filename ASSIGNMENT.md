@@ -222,9 +222,10 @@ under time pressure, say so in the README and describe how you would build it.
 
 Pick one:
 
-- **Automated model publication**: add a repeatable in-cluster process that
-  publishes a new model version using the existing artifact contract and
-  makes it eligible for the Part 3 promotion flow.
+- **Retraining loop**: implement a repeatable in-cluster retraining flow that
+  produces and publishes a versioned `v3` model artifact using the existing
+  artifact contract, ready for the Part 3 promotion flow. Training may be
+  simulated; the orchestration is your design.
 - **Operational alerting**: add one alert that would wake someone for the
   right reason, plus a short note on what you would dashboard first.
 
