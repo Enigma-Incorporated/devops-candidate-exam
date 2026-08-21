@@ -1,0 +1,30 @@
+{
+  "name": "sentiment",
+  "version": "v1",
+  "weights": {
+    "good": 1.0,
+    "great": 1.5,
+    "excellent": 2.0,
+    "love": 1.5,
+    "like": 0.8,
+    "works": 0.5,
+    "fast": 0.7,
+    "reliable": 1.0,
+    "happy": 1.2,
+    "amazing": 1.8,
+    "bad": -1.0,
+    "terrible": -2.0,
+    "awful": -1.8,
+    "hate": -1.5,
+    "slow": -0.7,
+    "broken": -1.2,
+    "crash": -1.5,
+    "bug": -0.8,
+    "sad": -1.0,
+    "useless": -1.5
+  },
+  "behavior": {
+    "extra_latency_ms": 0,
+    "error_rate": 0.0
+  }
+}

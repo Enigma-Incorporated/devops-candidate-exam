@@ -1,0 +1,29 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+.pytest_cache/
+
+# Terraform
+.terraform/
+.terragrunt-cache/
+*.tfstate
+*.tfstate.backup
+*.tfplan
+crash.log
+crash.*.log
+.terraform.tfstate.lock.info
+# Commit non-secret configuration and .terraform.lock.hcl. Keep only
+# workstation-local or secret variable files out of Git.
+*.local.tfvars
+*.secret.tfvars
+
+# Local environment
+.env
+.env.*
+!.env.example
+
+# Editors / OS
+.DS_Store
+.idea/
+*.swp

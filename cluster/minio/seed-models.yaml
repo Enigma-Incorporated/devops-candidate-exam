@@ -1,0 +1,102 @@
+# Seeds MinIO with versioned model artifacts:
+#
+#   models/sentiment/v1/model.json     - current production model
+#   models/sentiment/v2/model.json    - intentionally degraded fixture
+#   models/sentiment/v2.1/model.json  - the fixed follow-up version
+#
+# Each version also gets a manifest.json (version metadata) - treat the
+# version prefix + manifest as the unit of "a published model".
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: seed-models
+  namespace: minio
+data:
+  model-v1.json: |
+    {
+      "name": "sentiment",
+      "version": "v1",
+      "weights": {
+        "good": 1.0, "great": 1.5, "excellent": 2.0, "love": 1.5,
+        "like": 0.8, "works": 0.5, "fast": 0.7, "reliable": 1.0,
+        "happy": 1.2, "amazing": 1.8,
+        "bad": -1.0, "terrible": -2.0, "awful": -1.8, "hate": -1.5,
+        "slow": -0.7, "broken": -1.2, "crash": -1.5, "bug": -0.8,
+        "sad": -1.0, "useless": -1.5
+      },
+      "behavior": { "extra_latency_ms": 0, "error_rate": 0.0 }
+    }
+  model-v2.json: |
+    {
+      "name": "sentiment",
+      "version": "v2",
+      "weights": {
+        "good": 1.1, "great": 1.6, "excellent": 2.1, "love": 1.6,
+        "like": 0.9, "works": 0.6, "fast": 0.8, "reliable": 1.1,
+        "happy": 1.3, "amazing": 1.9, "perfect": 2.0,
+        "bad": -1.1, "terrible": -2.1, "awful": -1.9, "hate": -1.6,
+        "slow": -0.8, "broken": -1.3, "crash": -1.6, "bug": -0.9,
+        "sad": -1.1, "useless": -1.6, "disappointing": -1.4
+      },
+      "behavior": { "extra_latency_ms": 800, "error_rate": 0.35 }
+    }
+  model-v2.1.json: |
+    {
+      "name": "sentiment",
+      "version": "v2.1",
+      "weights": {
+        "good": 1.1, "great": 1.6, "excellent": 2.1, "love": 1.6,
+        "like": 0.9, "works": 0.6, "fast": 0.8, "reliable": 1.1,
+        "happy": 1.3, "amazing": 1.9, "perfect": 2.0,
+        "bad": -1.1, "terrible": -2.1, "awful": -1.9, "hate": -1.6,
+        "slow": -0.8, "broken": -1.3, "crash": -1.6, "bug": -0.9,
+        "sad": -1.1, "useless": -1.6, "disappointing": -1.4
+      },
+      "behavior": { "extra_latency_ms": 0, "error_rate": 0.0 }
+    }
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: seed-models
+  namespace: minio
+spec:
+  backoffLimit: 4
+  template:
+    spec:
+      restartPolicy: OnFailure
+      volumes:
+        - name: models
+          configMap:
+            name: seed-models
+      containers:
+        - name: seed
+          image: quay.io/minio/mc:RELEASE.2025-08-13T08-35-41Z@sha256:a7fe349ef4bd8521fb8497f55c6042871b2ae640607cf99d9bede5e9bdf11727
+          command: ["/bin/sh", "-c"]
+          env:
+            - name: MINIO_ROOT_USER
+              valueFrom:
+                secretKeyRef:
+                  name: minio-credentials
+                  key: root-user
+            - name: MINIO_ROOT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: minio-credentials
+                  key: root-password
+          volumeMounts:
+            - name: models
+              mountPath: /seed
+          args:
+            - |
+              set -e
+              export MC_HOST_local="http://${MINIO_ROOT_USER}:${MINIO_ROOT_PASSWORD}@minio.minio.svc.cluster.local:9000"
+              mc mb --ignore-existing local/models
+              for v in v1 v2 v2.1; do
+                mc cp "/seed/model-$v.json" "local/models/sentiment/$v/model.json"
+                printf '{"name":"sentiment","version":"%s","uploaded_at":"%s"}\n' \
+                  "$v" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" > /tmp/manifest.json
+                mc cp /tmp/manifest.json "local/models/sentiment/$v/manifest.json"
+              done
+              echo "seeded:"
+              mc ls -r local/models
